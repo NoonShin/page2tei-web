@@ -143,11 +143,6 @@
         <span class="mono text-xs mx-2" style="color:var(--rule)">→</span>
         <span class="mono text-xs tracking-widest uppercase" style="color:var(--dim)">TEI</span>
       </div>
-      <a href="https://github.com/dariok/page2tei" target="_blank"
-         class="mono text-xs" style="color:var(--dim); text-decoration:none;"
-         title="Based on page2tei by Dario Kampkaspar">
-        based on page2tei
-      </a>
     </div>
   </header>
 
@@ -159,8 +154,8 @@
         Convert PAGE XML to TEI
       </h1>
       <p class="text-sm" style="color:var(--dim)">
-        Upload PAGE XML files exported from Transkribus or eScriptorium.
-        Each file produces one TEI document, packaged as a ZIP.
+        This utility has been tested on and is optimized for PAGE exports from Transkribus and eScriptorium.
+        Each page produces one TEI document.
       </p>
     </div>
 
@@ -267,7 +262,7 @@
         <div x-show="metsLoaded && !metsHasMetadata"
              class="mt-3 p-3 rounded-sm text-xs"
              style="background:#fdf6f5; border:1px solid #f0c0b8; color:var(--accent)">
-          No metadata found in this METS file — this is typical for eScriptorium exports.
+          No metadata found in this METS file (this is typical for eScriptorium exports).
           Switch to Manual entry to add metadata.
         </div>
 
@@ -329,8 +324,9 @@
       <p class="text-xs" style="color:var(--dim)">
         XSLT by <a href="https://github.com/dariok/page2tei" target="_blank"
           style="color:var(--dim)">Dario Kampkaspar</a>,
-        adapted for browser use.
-        Runs entirely in your browser — no files are uploaded to any server.
+        adapted for browser use by <a href="https://github.com/NoonShin" target="_blank"
+          style="color:var(--dim)">Nooshin S. Asadi</a>.<br/>
+        Runs entirely in your browser. No files are uploaded to any server.
       </p>
     </div>
   </footer>
