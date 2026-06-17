@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PAGE → TEI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://www.saxonica.com/saxon-js/documentation2/SaxonJS/SaxonJS2.rt.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:    #1a1a2e;
+      --paper:  #f5f2eb;
+      --dim:    #8a8070;
+      --rule:   #d4cfc4;
+      --accent: #c0392b;
+      --ok:     #2d6a4f;
+    }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+    }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .drop-active { border-color: var(--accent) !important; background: #fdf6f5 !important; }
+
+    /* file chip */
+    .chip {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      background: white;
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      padding: 3px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chip-done  { border-color: var(--ok);    color: var(--ok); }
+    .chip-error { border-color: var(--accent); color: var(--accent); }
+
+    input[type=text], input[type=number], textarea {
+      background: white;
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      padding: 6px 10px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 300;
+      width: 100%;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input[type=text]:focus, input[type=number]:focus { border-color: var(--ink); }
+
+    .btn-primary {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+      letter-spacing: .05em;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .82; }
+    .btn-primary:disabled { opacity: .35; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--rule);
+      color: var(--dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      padding: 6px 14px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
+
+    .label {
+      font-size: 0.7rem;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--dim);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .rule { border: none; border-top: 1px solid var(--rule); }
+
+    /* radio toggle */
+    .tab-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: .05em;
+      padding: 5px 14px;
+      border: 1px solid var(--rule);
+      background: white;
+      color: var(--dim);
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .tab-btn:first-child { border-radius: 2px 0 0 2px; }
+    .tab-btn:last-child  { border-radius: 0 2px 2px 0; border-left: none; }
+    .tab-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+    /* progress bar */
+    .progress-track {
+      height: 2px;
+      background: var(--rule);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width .3s ease;
+    }
+
+    @keyframes pulse-dim {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+    .processing { animation: pulse-dim 1.2s infinite; }
+  </style>
+</head>
+<body x-data="app()" class="min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b" style="border-color: var(--rule);">
+    <div class="max-w-2xl mx-auto px-6 py-5 flex items-baseline justify-between">
+      <div>
+        <span class="mono text-xs tracking-widest uppercase" style="color:var(--dim)">PAGE</span>
+        <span class="mono text-xs mx-2" style="color:var(--rule)">→</span>
+        <span class="mono text-xs tracking-widest uppercase" style="color:var(--dim)">TEI</span>
+      </div>
+      <a href="https://github.com/dariok/page2tei" target="_blank"
+         class="mono text-xs" style="color:var(--dim); text-decoration:none;"
+         title="Based on page2tei by Dario Kampkaspar">
+        based on page2tei
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-6 py-10">
+
+    <!-- Title -->
+    <div class="mb-10">
+      <h1 class="text-3xl font-light tracking-tight mb-2" style="letter-spacing:-.02em">
+        Convert PAGE XML to TEI
+      </h1>
+      <p class="text-sm" style="color:var(--dim)">
+        Upload PAGE XML files exported from Transkribus or eScriptorium.
+        Each file produces one TEI document, packaged as a ZIP.
+      </p>
+    </div>
+
+    <!-- Step 1: PAGE files -->
+    <section class="mb-8">
+      <span class="label">1 — PAGE XML files</span>
+
+      <!-- Drop zone -->
+      <div
+        class="border-2 border-dashed rounded-sm flex flex-col items-center justify-center py-10 px-6 text-center transition-colors"
+        style="border-color: var(--rule); cursor: pointer;"
+        @dragover.prevent="$el.classList.add('drop-active')"
+        @dragleave="$el.classList.remove('drop-active')"
+        @drop.prevent="$el.classList.remove('drop-active'); addPageFiles($event.dataTransfer.files)"
+        @click="$refs.pageInput.click()"
+      >
+        <svg class="mb-3" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+        <p class="text-sm" style="color:var(--dim)">
+          Drop <span class="mono">.xml</span> files here or click to browse
+        </p>
+        <input type="file" accept=".xml" multiple x-ref="pageInput" class="hidden"
+               @change="addPageFiles($event.target.files)"/>
+      </div>
+
+      <!-- File list -->
+      <div x-show="pageFiles.length > 0" class="mt-3 flex flex-wrap gap-2">
+        <template x-for="(f, i) in pageFiles" :key="f.name">
+          <span class="chip" :class="f.status === 'done' ? 'chip-done' : f.status === 'error' ? 'chip-error' : ''">
+            <span x-text="f.name"></span>
+            <span x-show="f.status === 'done'">✓</span>
+            <span x-show="f.status === 'error'">✗</span>
+            <button x-show="!converting" @click.stop="removeFile(i)"
+                    style="color:var(--dim); background:none; border:none; cursor:pointer; line-height:1; padding:0;">×</button>
+          </span>
+        </template>
+      </div>
+    </section>
+
+    <hr class="rule mb-8"/>
+
+    <!-- Step 2: Metadata -->
+    <section class="mb-8">
+      <span class="label">2 — Metadata</span>
+
+      <!-- Source toggle -->
+      <div class="flex mb-5">
+        <button class="tab-btn" :class="metaSource === 'manual' ? 'active' : ''"
+                @click="metaSource = 'manual'">Manual</button>
+        <button class="tab-btn" :class="metaSource === 'mets' ? 'active' : ''"
+                @click="metaSource = 'mets'">From METS file</button>
+      </div>
+
+      <!-- Manual form -->
+      <div x-show="metaSource === 'manual'" class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="label">Title</label>
+          <input type="text" x-model="meta.title" placeholder="e.g. Beckett Papers, MS 5517"/>
+        </div>
+        <div>
+          <label class="label">Author</label>
+          <input type="text" x-model="meta.author" placeholder="e.g. Samuel Beckett"/>
+        </div>
+        <div>
+          <label class="label">Date</label>
+          <input type="text" x-model="meta.date" placeholder="e.g. 1930"/>
+        </div>
+        <div>
+          <label class="label">Identifier</label>
+          <input type="text" x-model="meta.idno" placeholder="e.g. MS 5517"/>
+        </div>
+        <div>
+          <label class="label">Publisher / Repository</label>
+          <input type="text" x-model="meta.publisher" placeholder="e.g. Trinity College Dublin"/>
+        </div>
+      </div>
+
+      <!-- METS upload -->
+      <div x-show="metaSource === 'mets'">
+        <div
+          class="border-2 border-dashed rounded-sm flex flex-col items-center justify-center py-8 px-6 text-center transition-colors"
+          style="border-color: var(--rule); cursor: pointer;"
+          @dragover.prevent="$el.classList.add('drop-active')"
+          @dragleave="$el.classList.remove('drop-active')"
+          @drop.prevent="$el.classList.remove('drop-active'); loadMets($event.dataTransfer.files[0])"
+          @click="$refs.metsInput.click()"
+        >
+          <p class="text-sm" style="color:var(--dim)">
+            Drop <span class="mono">mets.xml</span> here or click to browse
+          </p>
+          <input type="file" accept=".xml" x-ref="metsInput" class="hidden"
+                 @change="loadMets($event.target.files[0])"/>
+        </div>
+
+        <!-- METS status -->
+        <div x-show="metsStatus" class="mt-3 text-xs mono" style="color:var(--dim)"
+             x-text="metsStatus"></div>
+
+        <!-- eScriptorium notice -->
+        <div x-show="metsLoaded && !metsHasMetadata"
+             class="mt-3 p-3 rounded-sm text-xs"
+             style="background:#fdf6f5; border:1px solid #f0c0b8; color:var(--accent)">
+          No metadata found in this METS file — this is typical for eScriptorium exports.
+          Switch to Manual entry to add metadata.
+        </div>
+
+        <!-- Parsed preview -->
+        <div x-show="metsLoaded && metsHasMetadata" class="mt-4 grid grid-cols-2 gap-3">
+          <template x-for="field in ['title','author','date','idno','publisher']">
+            <div x-show="meta[field]">
+              <label class="label" x-text="field"></label>
+              <p class="text-sm mono" x-text="meta[field]" style="color:var(--ink)"></p>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule mb-8"/>
+
+    <!-- Step 3: Convert -->
+    <section class="mb-8">
+      <span class="label">3 — Convert</span>
+
+      <div class="flex items-center gap-4 mt-2">
+        <button class="btn-primary"
+                :disabled="pageFiles.length === 0 || converting"
+                @click="convert()">
+          <span x-show="!converting">Convert &amp; download ZIP</span>
+          <span x-show="converting" class="processing">Converting…</span>
+        </button>
+        <span x-show="pageFiles.length === 0" class="text-xs" style="color:var(--dim)">
+          Add PAGE XML files first
+        </span>
+      </div>
+
+      <!-- Progress -->
+      <div x-show="converting || done" class="mt-5">
+        <div class="flex justify-between text-xs mono mb-1" style="color:var(--dim)">
+          <span x-text="progressLabel"></span>
+          <span x-text="progressCount + ' / ' + pageFiles.length"></span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" :style="'width:' + progressPct + '%'"></div>
+        </div>
+      </div>
+
+      <!-- Done -->
+      <div x-show="done" class="mt-4 text-xs mono" style="color:var(--ok)">
+        ✓ <span x-text="pageFiles.length"></span> file<span x-show="pageFiles.length !== 1">s</span> converted
+        <span x-show="errorCount > 0" style="color:var(--accent)">
+          — <span x-text="errorCount"></span> error<span x-show="errorCount !== 1">s</span>
+        </span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t mt-16" style="border-color:var(--rule);">
+    <div class="max-w-2xl mx-auto px-6 py-5 flex justify-between items-center">
+      <p class="text-xs" style="color:var(--dim)">
+        XSLT by <a href="https://github.com/dariok/page2tei" target="_blank"
+          style="color:var(--dim)">Dario Kampkaspar</a>,
+        adapted for browser use.
+        Runs entirely in your browser — no files are uploaded to any server.
+      </p>
+    </div>
+  </footer>
+
+<script>
+function app() {
+  return {
+    pageFiles: [],
+    metaSource: 'manual',
+    meta: { title: '', author: '', date: '', idno: '', publisher: '' },
+    metsStatus: '',
+    metsLoaded: false,
+    metsHasMetadata: false,
+    converting: false,
+    done: false,
+    progressCount: 0,
+    errorCount: 0,
+
+    get progressPct() {
+      return this.pageFiles.length ? (this.progressCount / this.pageFiles.length) * 100 : 0;
+    },
+    get progressLabel() {
+      if (this.done) return 'Complete';
+      if (this.converting && this.progressCount < this.pageFiles.length)
+        return 'Processing ' + this.pageFiles[this.progressCount]?.name + '…';
+      return 'Starting…';
+    },
+
+    addPageFiles(fileList) {
+      const existing = new Set(this.pageFiles.map(f => f.name));
+      const sorted = Array.from(fileList)
+        .filter(f => f.name.endsWith('.xml') && !existing.has(f.name))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      sorted.forEach(f => this.pageFiles.push({ name: f.name, file: f, status: 'pending' }));
+    },
+
+    removeFile(i) {
+      this.pageFiles.splice(i, 1);
+    },
+
+    async loadMets(file) {
+      if (!file) return;
+      this.metsStatus = 'Reading ' + file.name + '…';
+      this.metsLoaded = false;
+      this.metsHasMetadata = false;
+      const text = await file.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'application/xml');
+
+      // Namespace-agnostic helpers
+      const first = (tag) => {
+        // try with no namespace first, then any namespace
+        let el = doc.querySelector(tag);
+        if (!el) el = doc.querySelector('*|' + tag);
+        if (!el) {
+          // walk all elements
+          const all = doc.getElementsByTagName('*');
+          for (let e of all) { if (e.localName === tag) { el = e; break; } }
+        }
+        return el ? el.textContent.trim() : '';
+      };
+
+      const title     = first('title');
+      const author    = first('author');
+      const colName   = first('colName');
+      const docId     = first('docId');
+      const desc      = first('desc');
+
+      const hasAny = title || author || colName || docId;
+      this.metsHasMetadata = !!hasAny;
+
+      if (hasAny) {
+        this.meta.title     = title     || '';
+        this.meta.author    = author    || '';
+        this.meta.publisher = colName   || '';
+        this.meta.idno      = docId     || '';
+        this.meta.date      = '';
+        this.metsStatus     = '✓ Metadata loaded from ' + file.name;
+      } else {
+        this.metsStatus = file.name + ' loaded — no metadata found';
+      }
+      this.metsLoaded = true;
+    },
+
+    async convert() {
+      if (!this.pageFiles.length) return;
+      this.converting = true;
+      this.done = false;
+      this.progressCount = 0;
+      this.errorCount = 0;
+      this.pageFiles.forEach(f => f.status = 'pending');
+
+      const zip = new JSZip();
+
+      for (let i = 0; i < this.pageFiles.length; i++) {
+        const entry = this.pageFiles[i];
+        const numCurr = i + 1;
+        // derive output filename: strip .xml, add .xml (normalises any spacing issues)
+        const outName = entry.name.replace(/\s+/g, '_').replace(/\.xml$/i, '') + '.xml';
+
+        try {
+          const sourceText = await entry.file.text();
+          const result = await SaxonJS.transform({
+            stylesheetLocation: 'page2tei.sef.json',
+            sourceText: sourceText,
+            destination: 'serialized',
+            stylesheetParams: {
+              'numCurr':   numCurr,
+              'title':     this.meta.title     || '',
+              'author':    this.meta.author    || '',
+              'date':      this.meta.date      || '',
+              'idno':      this.meta.idno      || '',
+              'publisher': this.meta.publisher || '',
+            }
+          }, 'async');
+
+          zip.file(outName, result.principalResult);
+          entry.status = 'done';
+        } catch (err) {
+          console.error('Error converting', entry.name, err);
+          entry.status = 'error';
+          this.errorCount++;
+        }
+
+        this.progressCount = i + 1;
+      }
+
+      // Generate and download zip
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'tei-output.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      this.converting = false;
+      this.done = true;
+    }
+  }
+}
+</script>
+</body>
+</html>
