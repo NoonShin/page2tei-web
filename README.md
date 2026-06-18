@@ -1,41 +1,29 @@
-# page2tei
-PAGE2TEI was created and is maintained by Dario Kampkaspar and is licensed under the MIT license.
+# page2tei-web
 
-## How to use
-Apply page2tei-0.xsl to the METS File:
+A browser-based converter from PAGE XML to TEI, built on top of 
+[page2tei](https://github.com/dariok/page2tei) by Dario Kampkaspar.
 
-```
-java -jar saxon9he.jar -xsl:page2tei-0.xsl -s:mets.xml -o:[your tei file].xml
-```
+## Quick factsheet
 
-Additional stylesheets can be applied to the output created by the basic transformation:
-- `combine-continued.xsl` (or set parameter `combine=true()`) — try to combine entities that are split over a line break into one element
-- `simplify-coordinates.xsl` (parameter `bounding-rectangles=true()` by default) — convert polygons into bounding rectangles
-- `tokenize.xsl` (or set parameter `tokenize=true()`) — perform (very basic!) whitespace tokenization
+- Static web application with no installation required and no data collection
+- Processes PAGE XML files directly (no METS required)
+- Metadata entry via form or by uploading a METS file
+- Outputs one TEI file per page
+- Handles both Transkribus (2013 namespace) and eScriptorium (2019 namespace) exports
 
-## Parameters
-You can set the following parameters when calling `page2tei-0.xsl` (via command line or via an oXygen scenario; in oXygen, the parameters should be marked as “XPath“):
+## Use it
 
-- rs (default: `true()`): create `rs type="..."` for person/place/org (default) or `persName` etc.
-- tokenize (default: `false()`): Whether to run white space tokenization
-- combine (default: `false()`): Whether to combine entities over line breaks
-- ab (default: `false()`): If false(), region types that correspond to valid TEI elements will be returned as 
-         this element; types that do not correspond to a TEI element will be returned as
-         tei:ab[@type]. If set to true(), all region types (except for paragraph, heading) will be
-         returned as tei:ab.
-- word-coordinates (default: `false()`): If true(), export the (estimated) word coordinates to the facsimile section.
-- bounding-rectangles (default: `true()`): Whether to create bounding rectangles from polygons (default: true())
-- withoutBaseline (default: `false()`): Whether to export lines without baseline or not
-- withoutTextline (default: `false()`): Whether to export regions without text lines
-- unknownAttributes (default: `true()`): Whether to export custom attributes from tags that we do not know how to convert to valid TEI (true(), default) or whether to discard them (false())
+→ [noonshin.github.io/page2tei-web](https://noonshin.github.io/page2tei-web)
 
+## Development
 
-## Contributors
-- @tboenig
-- @peterstadler
-- @tillgrallert
+The modified XSLT (`page2tei-web.xsl`) is compiled to `docs/page2tei.sef.json` using
+[Saxon-JS](https://www.saxonica.com/saxon-js/index.xml):
 
----
+    xslt3 -xsl:page2tei-web.xsl -export:docs/page2tei.sef.json -nogo -relocate:on
 
-Some contributions to this software were created within the scope of a project funded by the German BMBF, project ID 16TOA015A.
+## Credits
 
+XSLT logic by [Dario Kampkaspar](https://github.com/dariok/page2tei), 
+licensed under MIT. This fork modifies the stylesheet for browser execution 
+and adds the web interface.
