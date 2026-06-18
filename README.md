@@ -15,6 +15,8 @@ A browser-based converter from PAGE XML to TEI, built on top of
 
 → [noonshin.github.io/page2tei-web](https://noonshin.github.io/page2tei-web)
 
+→ Alternatively, download the repository and run the app locally (e.g. through a simple [python http server](https://realpython.com/python-http-server/))
+
 ## Development
 
 The modified XSLT (`page2tei-web.xsl`) is compiled to `docs/page2tei.sef.json` using
